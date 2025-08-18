@@ -1,4 +1,5 @@
 from djoser.serializers import UserCreateSerializer as BaseUserCreateSerializer
+from djoser.serializers import UserSerializer as BaseUserSerializer
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from django.utils.timesince import timesince
@@ -18,6 +19,11 @@ class UserCreateSerializer(BaseUserCreateSerializer):
             raise serializers.ValidationError({"password": "passwords do not match!"})
         attrs.pop('confirm_password')
         return attrs
+    
+class UserSerializer(BaseUserSerializer):
+    class Meta(BaseUserSerializer.Meta):
+        model = User
+        fields = ('id', 'email', 'username', 'fullname', 'country', 'phone_number')
         
 class ProductSerializers(serializers.ModelSerializer):
     time_ago = serializers.SerializerMethodField()

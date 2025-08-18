@@ -63,7 +63,8 @@ MIDDLEWARE = [
 
 SIMPLE_JWT = {
     "AUTH_COOKIE": "access",         
-    "AUTH_COOKIE_REFRESH": "refresh", 
+    "AUTH_COOKIE_REFRESH": "refresh",
+    "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_COOKIE_HTTP_ONLY": True,
     "AUTH_COOKIE_SECURE": True,      
     "AUTH_COOKIE_SAMESITE": "Lax",
@@ -75,12 +76,21 @@ DJOSER = {
     'LOGIN_FIELD': 'email',
     'SERIALIZERS': {
         'user_create': 'apiconfig.serializers.UserCreateSerializer',
+        'current_user': 'apiconfig.serializers.UserSerializer',
+        "user": "apiconfig.serializers.UserSerializer",
     }
 }
 
 REST_FRAMEWORK = {
-    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.openapi.AutoSchema',
+    "DEFAULT_SCHEMA_CLASS": "rest_framework.schemas.openapi.AutoSchema",
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "apiconfig.authentication.CookieJWTAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
 }
+
 
 # Stripe
 STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY")
