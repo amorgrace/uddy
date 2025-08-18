@@ -23,9 +23,10 @@ SECRET_KEY = config("SECRET_KEY")
 
 DEBUG = config("DEBUG", default=False, cast=bool)
 
-ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="*", cast=Csv())
-CORS_ALLOW_CREDENTIALS = True
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv())
+
 CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", cast=Csv())
+CORS_ALLOW_CREDENTIALS = True
 
 AUTH_USER_MODEL = 'apiconfig.User'
 
