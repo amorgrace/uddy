@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.sqlite3
+*.db
+*.log
+
+# Virtual environment
+venv/
+ENV/
+env/
+.venv/
+
+# Django
+/media/
+staticfiles/
+*.pot
+*.pyc
+*.mo
+
+# Env files
+.env
+.env.*
+
+# IDEs / Editors
+.vscode/
+.idea/
+
+# Build / Packaging
+*.egg-info/
+*.egg
+build/
+dist/
+
+# Coverage / Testing
+htmlcov/
+.tox/
+.coverage
+coverage.xml
+.pytest_cache/
