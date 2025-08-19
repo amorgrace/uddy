@@ -25,12 +25,13 @@ DEBUG = config("DEBUG", default=False, cast=bool)
 
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv())
 
-CORS_ALLOWED_ORIGINS = [
-    "https://uddy-rho.vercel.app",
-    "https://uddy.onrender.com",
-]
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", cast=Csv())
+CORS_ALLOW_CREDENTIALS = config("CORS_ALLOW_CREDENTIALS", cast=bool)
 
+SESSION_COOKIE_SAMESITE = config("SESSION_COOKIE_SAMESITE")
+SESSION_COOKIE_SECURE = config("SESSION_COOKIE_SECURE", cast=bool)
+CSRF_COOKIE_SAMESITE = config("CSRF_COOKIE_SAMESITE")
+CSRF_COOKIE_SECURE = config("CSRF_COOKIE_SECURE", cast=bool)
 
 AUTH_USER_MODEL = 'apiconfig.User'
 
