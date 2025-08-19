@@ -23,7 +23,8 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from drf_yasg.utils import swagger_auto_schema
-
+from django.db.models import Count
+from rest_framework.generics import ListAPIView
 
 
 
@@ -314,3 +315,20 @@ def stripe_webhook(request):
                 order.save()
 
     return HttpResponse(status=200)
+
+
+class CategorySummaryView(APIView):
+    def get(self, request):
+        data = (
+            Product.objects.values("category")
+            .annotate(total_products=Count("id"))
+            .order_by("category")
+        )
+        return Response(data)
+    
+class ProductByCategoryView(ListAPIView):
+    serializer_class = ProductSerializers
+
+    def get_queryset(self):
+        category = self.kwargs['category']
+        return Product.objects.filter(category__iexact=category)

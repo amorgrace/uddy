@@ -1,7 +1,6 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
-from .views import ProductViewSet, CustomTokenObtainPairView, CustomTokenRefreshView, CustomTokenLogoutView, CheckoutPreviewView, CheckoutConfirmView, stripe_webhook, CheckoutInitiateView
-
+from .views import ProductViewSet, CustomTokenObtainPairView, CustomTokenRefreshView, CustomTokenLogoutView, CheckoutPreviewView, CheckoutConfirmView, stripe_webhook, CheckoutInitiateView, CategorySummaryView, ProductByCategoryView
 
 router = DefaultRouter()
 
@@ -9,6 +8,10 @@ urlpatterns = [
     path("auth/jwt/create/", CustomTokenObtainPairView.as_view(), name="jwt-create"),
     path("auth/jwt/refresh/", CustomTokenRefreshView.as_view(), name="jwt-refresh"),
     path("auth/jwt/logout/", CustomTokenLogoutView.as_view(), name="jwt-logout"),
+
+    path("categories/", CategorySummaryView.as_view(), name="category-summary"),
+    path("categories/<str:category>/", ProductByCategoryView.as_view(), name="products-by-category"),
+
 
     path("checkout/preview/",   CheckoutPreviewView.as_view(),   name="checkout-preview"),
     path("checkout/initiate/",  CheckoutInitiateView.as_view(),  name="checkout-initiate"),
