@@ -15,7 +15,7 @@ from rest_framework import status, generics
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
 from decimal import Decimal
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny 
 import json
 import stripe
 from drf_yasg import openapi
@@ -318,6 +318,7 @@ def stripe_webhook(request):
 
 
 class CategorySummaryView(APIView):
+    permission_classes = [AllowAny]
     def get(self, request):
         data = (
             Product.objects.values("category")
@@ -328,6 +329,7 @@ class CategorySummaryView(APIView):
     
 class ProductByCategoryView(ListAPIView):
     serializer_class = ProductSerializers
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         category = self.kwargs['category']
