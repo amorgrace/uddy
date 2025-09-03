@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.conf import settings
+from decimal import Decimal
+
 
 
 class CustomUserManager(BaseUserManager):
@@ -56,16 +58,32 @@ class Product(models.Model):
     def __str__(self):
         return self.title
 
+class Cart(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="carts")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def total_amount(self):
+        return sum(item.total_price() for item in self.items.all())
+    
+class CartItem(models.Model):
+    cart = models.ForeignKey(Cart, related_name="items", on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+
+    def total_price(self):
+        return self.product.price * self.quantity
 class Order(models.Model):
-    class Status(models.TextChoices):
-        PENDING = "PENDING", "Pending"
-        PAID = "PAID", "Paid"
-        FAILED = "FAILED", "Failed"
+
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("paid", "Paid"),
+        ("failed", "Failed"),
+    ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="orders")
-    total_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
-    stripe_payment_intent = models.CharField(max_length=255, blank=True, default="")
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='pending')
+    reference = models.CharField(max_length=100, unique=True, default='')  # for Kora
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -73,10 +91,18 @@ class Order(models.Model):
     
     
 class OrderItem(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
-    product = models.ForeignKey(Product, on_delete=models.PROTECT)
+    order = models.ForeignKey(Order, related_name="items", on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
-    price_at_purchase = models.DecimalField(max_digits=10, decimal_places=2)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
 
-    def subtotal(self):
-        return self.price_at_purchase * self.quantity
+    def total_price(self):
+        return self.price * self.quantity
+    
+class Payment(models.Model):
+    order = models.OneToOneField(Order, related_name="payment", on_delete=models.CASCADE)
+    provider = models.CharField(max_length=50, default="Kora")
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, default="pending")  # pending, confirmed, failed
+    transaction_id = models.CharField(max_length=255, blank=True, null=True)  # from Kora API
+    created_at = models.DateTimeField(auto_now_add=True)

@@ -97,10 +97,10 @@ REST_FRAMEWORK = {
     ],
 }
 
-
-# Stripe
-STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY")
-STRIPE_WEBHOOK_SECRET = config("STRIPE_WEBHOOK_SECRET")
+# Kora
+KORA_PUBLIC_KEY = config("KORA_PUBLIC_KEY")
+KORA_SECRET_KEY = config("KORA_SECRET_KEY")
+KORA_BASE_URL = config("KORA_BASE_URL", "https://api.korapay.com/merchant/api/v1")
 
 ROOT_URLCONF = 'uddy.urls'
 
