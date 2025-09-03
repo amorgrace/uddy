@@ -189,7 +189,6 @@ class CheckoutView(APIView):
         order = Order.objects.create(
             user=request.user,
             total_amount=total_amount,
-            reference=f"ref_{request.user.id}_{cart.id}"
         )
 
         for item in cart.items.all():
