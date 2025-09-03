@@ -17,7 +17,6 @@ from rest_framework.views import APIView
 from decimal import Decimal
 from rest_framework.permissions import IsAuthenticated, AllowAny 
 import requests, json
-# import stripe
 from drf_yasg import openapi
 from django.conf import settings
 from django.shortcuts import get_object_or_404
@@ -25,10 +24,7 @@ from django.views.decorators.csrf import csrf_exempt
 from drf_yasg.utils import swagger_auto_schema
 from django.db.models import Count
 from rest_framework.generics import ListAPIView
-
-
-
-# stripe.api_key = settings.STRIPE_SECRET_KEY
+from drf_yasg import openapi
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -123,9 +119,6 @@ class ProductByCategoryView(ListAPIView):
     
 
 # -------- CART --------
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
-
 class CartView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -138,7 +131,7 @@ class CartView(APIView):
         return Response(serializer.data)
 
     @swagger_auto_schema(
-        request_body=CartAddSerializer,   # 👈 show product_id + quantity
+        request_body=CartAddSerializer,
         responses={201: CartSerializer()}
     )
     def post(self, request):
@@ -160,6 +153,26 @@ class CartView(APIView):
 
         cart_serializer = CartSerializer(cart)
         return Response(cart_serializer.data, status=status.HTTP_201_CREATED)
+
+    @swagger_auto_schema(
+        request_body=CartAddSerializer,   # 👈 same input as POST
+        responses={200: CartSerializer()}
+    )
+    def delete(self, request):
+        serializer = CartAddSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        product_id = serializer.validated_data["product_id"]
+
+        cart = get_object_or_404(Cart, user=request.user)
+        cart_item = CartItem.objects.filter(cart=cart, product_id=product_id).first()
+
+        if not cart_item:
+            return Response({"error": "Item not found in cart"}, status=status.HTTP_404_NOT_FOUND)
+
+        cart_item.delete()
+        cart_serializer = CartSerializer(cart)
+        return Response(cart_serializer.data, status=status.HTTP_200_OK)
 
 
 
