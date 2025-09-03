@@ -80,10 +80,17 @@ class Order(models.Model):
         ("failed", "Failed"),
     ]
 
+    def generate_reference():
+        return str(uuid.uuid4())
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="orders")
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
     status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='pending')
-    reference = models.CharField(max_length=100, unique=True, default=uuid.uuid4)  # for Kora
+    reference = models.CharField(
+        max_length=100,
+        unique=True,
+        default=generate_reference   # 👈 not uuid.uuid4 directly
+    ) # for Kora
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
