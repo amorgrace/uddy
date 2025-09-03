@@ -3,7 +3,7 @@ from rest_framework import viewsets, permissions
 from .models import Product, Cart, CartItem, Order, OrderItem, Payment
 from .serializers import (
     CartSerializer,
-    CartItemSerializer,
+    CartAddSerializer,
     OrderSerializer,
     ProductSerializer,
 
@@ -123,46 +123,45 @@ class ProductByCategoryView(ListAPIView):
     
 
 # -------- CART --------
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+
 class CartView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    @swagger_auto_schema(
+        responses={200: CartSerializer()}
+    )
     def get(self, request):
         cart, _ = Cart.objects.get_or_create(user=request.user)
         serializer = CartSerializer(cart)
         return Response(serializer.data)
 
+    @swagger_auto_schema(
+        request_body=CartAddSerializer,   # 👈 show product_id + quantity
+        responses={201: CartSerializer()}
+    )
     def post(self, request):
+        serializer = CartAddSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        product_id = serializer.validated_data["product_id"]
+        quantity = serializer.validated_data["quantity"]
+
+        product = get_object_or_404(Product, id=product_id)
         cart, _ = Cart.objects.get_or_create(user=request.user)
-        product_id = request.data.get("product_id")
-        quantity = int(request.data.get("quantity", 1))
 
-        try:
-            product = Product.objects.get(id=product_id)
-        except Product.DoesNotExist:
-            return Response({"error": "Product not found"}, status=404)
-
-        item, created = CartItem.objects.get_or_create(cart=cart, product=product)
+        cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
         if created:
-            item.quantity = quantity
+            cart_item.quantity = quantity
         else:
-            item.quantity += quantity
-        item.save()
+            cart_item.quantity += quantity
+        cart_item.save()
 
-        serializer = CartSerializer(cart)
-        return Response(serializer.data)
+        cart_serializer = CartSerializer(cart)
+        return Response(cart_serializer.data, status=status.HTTP_201_CREATED)
 
-    def delete(self, request):
-        cart, _ = Cart.objects.get_or_create(user=request.user)
-        product_id = request.data.get("product_id")
 
-        try:
-            item = CartItem.objects.get(cart=cart, product_id=product_id)
-            item.delete()
-        except CartItem.DoesNotExist:
-            return Response({"error": "Item not in cart"}, status=404)
-
-        serializer = CartSerializer(cart)
-        return Response(serializer.data)
 
 # -------- CHECKOUT --------
 class CheckoutView(APIView):
