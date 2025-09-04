@@ -189,7 +189,7 @@ class CheckoutView(APIView):
         order = Order.objects.create(
             user=request.user,
             total_amount=total_amount,
-            reference=str(uuid.uuid4())  # ensures uniqueness
+            reference=str(uuid.uuid4())
         )
 
         for item in cart.items.all():
@@ -202,7 +202,10 @@ class CheckoutView(APIView):
 
         cart.items.all().delete()
 
-        url = f"{settings.KORA_BASE_URL}/charges"
+        # Clean base URL to avoid trailing slashes/newlines
+        base_url = settings.KORA_BASE_URL.strip().rstrip("/")
+        url = f"{base_url}/charges/initialize"
+
         headers = {
             "Authorization": f"Bearer {settings.KORA_SECRET_KEY}",
             "Content-Type": "application/json",
@@ -218,25 +221,23 @@ class CheckoutView(APIView):
             r = requests.post(url, json=payload, headers=headers)
             response_data = r.json()
         except Exception as e:
-            return Response({"error": f"Failed to reach Korapay: {str(e)}"}, status=502)
+            return Response({"error": "Request failed", "details": str(e)}, status=500)
 
-        data = response_data.get("data") or {}
-
-        if not data.get("checkout_url"):
-            return Response({
-                "error": "Payment initialization failed",
-                "details": response_data
-            }, status=400)
+        if not response_data.get("status"):
+            return Response(
+                {"error": "Payment initialization failed", "details": response_data},
+                status=400,
+            )
 
         Payment.objects.create(
             order=order,
             amount=order.total_amount,
-            transaction_id=data.get("id"),
+            transaction_id=response_data.get("data", {}).get("id"),
             status="pending",
         )
 
         return Response({
-            "checkout_url": data.get("checkout_url"),
+            "checkout_url": response_data.get("data", {}).get("checkout_url"),
             "order_id": order.id,
             "reference": order.reference,
         })

@@ -29,3 +29,8 @@ urlpatterns = [
 
 router.register(r'products', ProductViewSet, basename='product')
 urlpatterns += router.urls
+
+{
+  "email": "akan@gmail.com",
+  "password": "amorgrace35"
+}
