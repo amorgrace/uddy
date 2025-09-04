@@ -25,7 +25,7 @@ from drf_yasg.utils import swagger_auto_schema
 from django.db.models import Count
 from rest_framework.generics import ListAPIView
 from drf_yasg import openapi
-
+import uuid
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     def post(self, request, *args, **kwargs):
@@ -189,6 +189,7 @@ class CheckoutView(APIView):
         order = Order.objects.create(
             user=request.user,
             total_amount=total_amount,
+            reference=str(uuid.uuid4())  # ensures uniqueness
         )
 
         for item in cart.items.all():
@@ -199,10 +200,8 @@ class CheckoutView(APIView):
                 price=item.product.price
             )
 
-        # Clear the cart after checkout
         cart.items.all().delete()
 
-        # Initialize Kora Payment
         url = f"{settings.KORA_BASE_URL}/charges"
         headers = {
             "Authorization": f"Bearer {settings.KORA_SECRET_KEY}",
@@ -215,20 +214,34 @@ class CheckoutView(APIView):
             "reference": order.reference,
         }
 
-        r = requests.post(url, json=payload, headers=headers).json()
+        try:
+            r = requests.post(url, json=payload, headers=headers)
+            response_data = r.json()
+        except Exception as e:
+            return Response({"error": f"Failed to reach Korapay: {str(e)}"}, status=502)
+
+        data = response_data.get("data") or {}
+
+        if not data.get("checkout_url"):
+            return Response({
+                "error": "Payment initialization failed",
+                "details": response_data
+            }, status=400)
 
         Payment.objects.create(
             order=order,
             amount=order.total_amount,
-            transaction_id=r.get("data", {}).get("id"),
+            transaction_id=data.get("id"),
             status="pending",
         )
 
         return Response({
-            "checkout_url": r.get("data", {}).get("checkout_url"),
+            "checkout_url": data.get("checkout_url"),
             "order_id": order.id,
             "reference": order.reference,
         })
+
+
 
 
 # -------- ORDERS --------
