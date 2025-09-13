@@ -9,6 +9,7 @@ from .views import (
     ProductByCategoryView, 
     CartView, 
     CheckoutView,
+    VerifyPaymentView,
     kora_webhook
 )
 router = DefaultRouter()
@@ -24,6 +25,7 @@ urlpatterns = [
     path('cart/', CartView.as_view(), name='cart'),
     path('checkout/', CheckoutView.as_view(), name='checkout'),
     path("webhook/kora/", kora_webhook, name="kora-webhook"),
+    path("verify-payment/<str:reference>/", VerifyPaymentView.as_view(), name="verify-payment")
     
 ]
 

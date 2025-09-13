@@ -202,6 +202,7 @@ class CheckoutView(APIView):
 
         cart.items.all().delete()
 
+
         # Clean base URL to avoid trailing slashes/newlines
         base_url = settings.KORA_BASE_URL.strip().rstrip("/")
         url = f"{base_url}/charges/initialize"
@@ -210,11 +211,17 @@ class CheckoutView(APIView):
             "Authorization": f"Bearer {settings.KORA_SECRET_KEY}",
             "Content-Type": "application/json",
         }
+
+        if settings.DEBUG:
+            redirect = "http://localhost:3000/payment-status"
+        else:
+            redirect = "https://uddy-rho.vercel.app/payment-status"
         payload = {
             "amount": str(order.total_amount),
             "currency": "NGN",
             "customer": {"email": request.user.email},
             "reference": order.reference,
+            "redirect_url": redirect
         }
 
         try:
@@ -241,6 +248,41 @@ class CheckoutView(APIView):
             "order_id": order.id,
             "reference": order.reference,
         })
+
+
+class VerifyPaymentView(APIView):
+    def get(self, request, reference):
+        try:
+            headers = {
+                "Authorization": f"Bearer {settings.KORA_SECRET_KEY}",
+                "Content-Type": "application/json"
+            }
+
+            response = requests.get(
+                f"{settings.KORA_BASE_URL}/charges/{reference}",
+                headers=headers
+            )
+            res_data = response.json()
+
+            if response.status_code != 200 or not res_data.get("status"):
+                return Response(
+                    {"error": "Payment verification failed", "details": res_data},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            payment_status = res_data["data"]["status"]  # e.g. "success", "failed", "pending"
+
+            try:
+                order = Order.objects.get(reference=reference)
+                order.status = payment_status
+                order.save()
+            except Order.DoesNotExist:
+                pass
+
+            return Response({"status": payment_status, "reference": reference, "details": res_data})
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
