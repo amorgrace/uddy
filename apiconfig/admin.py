@@ -8,21 +8,28 @@ from django.utils.timesince import timesince
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
     model = User
-    list_display = ('id', 'email', 'fullname', 'phone_number', 'country', 'is_staff', 'is_active')
-    search_fields = ('email', 'fullname', 'phone_number', 'country')
+    list_display = (
+        'id', 'email', 'username', 'fullname', 'phone_number', 'country', 'is_staff', 'is_active'
+    )
+    search_fields = ('email', 'username', 'fullname', 'phone_number', 'country')
     ordering = ('email',)
 
     fieldsets = (
-        (None, {'fields': ('email', 'password')}),
+        (None, {'fields': ('email', 'username', 'password')}),
         ('Personal Info', {'fields': ('fullname', 'phone_number', 'country')}),
-        ('Permissions', {'fields': ('is_staff', 'is_active', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Permissions', {
+            'fields': ('is_staff', 'is_active', 'is_superuser', 'groups', 'user_permissions')
+        }),
     )
 
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'fullname', 'phone_number', 'country', 'password1', 'password2', 'is_staff', 'is_active')}
-        ),
+            'fields': (
+                'email', 'username', 'fullname', 'phone_number', 'country',
+                'password1', 'password2', 'is_staff', 'is_active'
+            )
+        }),
     )
 
 

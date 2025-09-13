@@ -213,7 +213,7 @@ class CheckoutView(APIView):
         }
 
         if settings.DEBUG:
-            redirect = "http://localhost:3000/payment-status"
+            redirect = "http://localhost:5173/payment-status"
         else:
             redirect = "https://uddy-rho.vercel.app/payment-status"
         payload = {
