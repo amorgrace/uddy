@@ -1,10 +1,20 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User, Product
+from .models import User, Product, Order
 from .forms import ProductAdminForm
 from django.utils.timesince import timesince
 
 # Custom User Admin
+
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 'user', 'reference', 'total_amount', 'status', 'created_at'
+    )
+    list_filter = ('status', 'created_at')
+    search_fields = ('reference', 'user__email', 'user__username')
+    ordering = ('-created_at',)
+    
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
     model = User

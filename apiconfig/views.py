@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from rest_framework import viewsets, permissions
+from .utils import update_order_status
 from .models import Product, Cart, CartItem, Order, OrderItem, Payment
 from .serializers import (
     CartSerializer,
@@ -249,40 +250,55 @@ class CheckoutView(APIView):
             "reference": order.reference,
         })
 
-
 class VerifyPaymentView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request, reference):
-        try:
-            headers = {
-                "Authorization": f"Bearer {settings.KORA_SECRET_KEY}",
-                "Content-Type": "application/json"
-            }
+        # Call Kora's verify API first
+        resp = requests.get(
+            f"{settings.KORA_BASE_URL}/charges/{reference}",
+            headers={"Authorization": f"Bearer {settings.KORA_SECRET_KEY}"},
+            timeout=10
+        )
+        result = resp.json()
+        kora_status = result["data"]["status"]
+        update_order_status(reference, kora_status)
+        return Response(result)
 
-            response = requests.get(
-                f"{settings.KORA_BASE_URL}/charges/{reference}",
-                headers=headers
-            )
-            res_data = response.json()
 
-            if response.status_code != 200 or not res_data.get("status"):
-                return Response(
-                    {"error": "Payment verification failed", "details": res_data},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+# class VerifyPaymentView(APIView):
+#     def get(self, request, reference):
+#         try:
+#             headers = {
+#                 "Authorization": f"Bearer {settings.KORA_SECRET_KEY}",
+#                 "Content-Type": "application/json"
+#             }
 
-            payment_status = res_data["data"]["status"]  # e.g. "success", "failed", "pending"
+#             response = requests.get(
+#                 f"{settings.KORA_BASE_URL}/charges/{reference}",
+#                 headers=headers
+#             )
+#             res_data = response.json()
 
-            try:
-                order = Order.objects.get(reference=reference)
-                order.status = payment_status
-                order.save()
-            except Order.DoesNotExist:
-                pass
+#             if response.status_code != 200 or not res_data.get("status"):
+#                 return Response(
+#                     {"error": "Payment verification failed", "details": res_data},
+#                     status=status.HTTP_400_BAD_REQUEST
+#                 )
 
-            return Response({"status": payment_status, "reference": reference, "details": res_data})
+#             payment_status = res_data["data"]["status"]  # e.g. "success", "failed", "pending"
 
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#             try:
+#                 order = Order.objects.get(reference=reference)
+#                 order.status = payment_status
+#                 order.save()
+#             except Order.DoesNotExist:
+#                 pass
+
+#             return Response({"status": payment_status, "reference": reference, "details": res_data})
+
+#         except Exception as e:
+#             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
@@ -307,28 +323,38 @@ class OrderDetailView(generics.RetrieveAPIView):
 # -------- WEBHOOK --------
 @csrf_exempt
 def kora_webhook(request):
-    data = json.loads(request.body)
-    reference = data.get("reference")
-    status = data.get("status")
-
-    try:
-        order = Order.objects.get(reference=reference)
-    except Order.DoesNotExist:
-        return JsonResponse({"error": "Order not found"}, status=404)
-
-    payment = order.payment
-
-    if status == "success":
-        order.status = "paid"
-        payment.status = "confirmed"
-    elif status == "pending":
-        order.status = "pending"
-        payment.status = "pending"
-    else:
-        order.status = "failed"
-        payment.status = "failed"
-
-    order.save()
-    payment.save()
-
+    payload = json.loads(request.body)
+    data = payload.get("data", payload)  # handle wrapper if any
+    update_order_status(
+        reference=data.get("reference"),
+        kora_status=data.get("status"),
+    )
     return JsonResponse({"status": "ok"})
+# @csrf_exempt
+# def kora_webhook(request):
+#     data = json.loads(request.body)
+#     reference = data.get("reference")
+#     status = data.get("status")
+
+#     try:
+#         order = Order.objects.get(reference=reference)
+#     except Order.DoesNotExist:
+#         return JsonResponse({"error": "Order not found"}, status=404)
+
+#     payment = order.payment
+
+#     if status == "success":
+#         order.status = "paid"
+#         payment.status = "confirmed"
+#     elif status == "pending":
+#         order.status = "pending"
+#         payment.status = "pending"
+#     else:
+#         order.status = "failed"
+#         payment.status = "failed"
+
+#     order.save()
+#     payment.save()
+
+#     return JsonResponse({"status": "ok"})
+
