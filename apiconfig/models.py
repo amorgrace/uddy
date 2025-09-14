@@ -59,11 +59,17 @@ class Product(models.Model):
         return self.title
 
 class Cart(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="carts")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                             on_delete=models.CASCADE,
+                             related_name="carts")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def total_amount(self):
-        return sum(item.total_price() for item in self.items.all())
+        # Always start with a Decimal so DRF’s DecimalField is happy
+        return sum(
+            (item.total_price() for item in self.items.all()),
+            Decimal("0.00")
+        )
     
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, related_name="items", on_delete=models.CASCADE)
