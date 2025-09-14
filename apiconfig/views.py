@@ -123,18 +123,12 @@ class ProductByCategoryView(ListAPIView):
 class CartView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @swagger_auto_schema(
-        responses={200: CartSerializer()}
-    )
+    @swagger_auto_schema(responses={200: CartSerializer()})
     def get(self, request):
         cart, _ = Cart.objects.get_or_create(user=request.user)
-        serializer = CartSerializer(cart)
-        return Response(serializer.data)
+        return Response(CartSerializer(cart).data)
 
-    @swagger_auto_schema(
-        request_body=CartAddSerializer,
-        responses={201: CartSerializer()}
-    )
+    @swagger_auto_schema(request_body=CartAddSerializer, responses={201: CartSerializer()})
     def post(self, request):
         serializer = CartAddSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -146,34 +140,30 @@ class CartView(APIView):
         cart, _ = Cart.objects.get_or_create(user=request.user)
 
         cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
-        if created:
-            cart_item.quantity = quantity
-        else:
-            cart_item.quantity += quantity
+        cart_item.quantity = cart_item.quantity + quantity if not created else quantity
         cart_item.save()
 
-        cart_serializer = CartSerializer(cart)
-        return Response(cart_serializer.data, status=status.HTTP_201_CREATED)
+        return Response(CartSerializer(cart).data, status=status.HTTP_201_CREATED)
 
-    @swagger_auto_schema(
-        request_body=CartAddSerializer,   # 👈 same input as POST
-        responses={200: CartSerializer()}
-    )
+    @swagger_auto_schema(request_body=CartAddSerializer, responses={200: CartSerializer()})
     def delete(self, request):
         serializer = CartAddSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         product_id = serializer.validated_data["product_id"]
 
-        cart = get_object_or_404(Cart, user=request.user)
+        # ✅ Return empty cart if none exists instead of 404
+        cart = Cart.objects.filter(user=request.user).first()
+        if not cart:
+            empty_cart = Cart(user=request.user)   # not saved; purely for serializer
+            return Response(CartSerializer(empty_cart).data, status=status.HTTP_200_OK)
+
+        # Delete item if present
         cart_item = CartItem.objects.filter(cart=cart, product_id=product_id).first()
+        if cart_item:
+            cart_item.delete()
 
-        if not cart_item:
-            return Response({"error": "Item not found in cart"}, status=status.HTTP_404_NOT_FOUND)
+        return Response(CartSerializer(cart).data, status=status.HTTP_200_OK)
 
-        cart_item.delete()
-        cart_serializer = CartSerializer(cart)
-        return Response(cart_serializer.data, status=status.HTTP_200_OK)
 
 
 
