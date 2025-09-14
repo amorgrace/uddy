@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.conf import settings
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 import uuid
 
 
@@ -59,25 +59,39 @@ class Product(models.Model):
         return self.title
 
 class Cart(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL,
-                             on_delete=models.CASCADE,
-                             related_name="carts")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="carts"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def total_amount(self):
-        # Always start with a Decimal so DRF’s DecimalField is happy
-        return sum(
-            (item.total_price() for item in self.items.all()),
-            Decimal("0.00")
-        )
-    
+        total = Decimal("0.00")
+        for item in self.items.all():
+            try:
+                total += item.total_price()
+            except (InvalidOperation, TypeError):
+                # skip or log the problematic item instead of breaking the response
+                continue
+        return total
+
+
 class CartItem(models.Model):
-    cart = models.ForeignKey(Cart, related_name="items", on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField(default=1)
+    cart = models.ForeignKey(
+        Cart,
+        related_name="items",
+        on_delete=models.CASCADE
+    )
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
+    quantity = models.PositiveIntegerField()
 
     def total_price(self):
-        return self.product.price * self.quantity
+        # Always return a valid Decimal
+        try:
+            return self.price * Decimal(self.quantity)
+        except (InvalidOperation, TypeError):
+            return Decimal("0.00")
 class Order(models.Model):
 
     STATUS_CHOICES = [
