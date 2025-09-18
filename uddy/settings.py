@@ -15,7 +15,7 @@ from decouple import config, Csv
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
-
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -125,15 +125,13 @@ WSGI_APPLICATION = 'uddy.wsgi.application'
 
 # Database (using sqlite by default, can switch with env)
 DATABASES = {
-    'default': {
-        'ENGINE': config("DB_ENGINE", default="django.db.backends.sqlite3"),
-        'NAME': config("DB_NAME", default=BASE_DIR / "db.sqlite3"),
-        'USER': config("DB_USER", default=""),
-        'PASSWORD': config("DB_PASSWORD", default=""),
-        'HOST': config("DB_HOST", default=""),
-        'PORT': config("DB_PORT", default=""),
-    }
+    'default': dj_database_url.config(
+        default=config('DATABASE_URL'),
+        conn_max_age=600,
+        ssl_require=True,
+    )
 }
+
 
 # Cloudinary
 cloudinary.config( 

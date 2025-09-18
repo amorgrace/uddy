@@ -83,7 +83,7 @@ class CartItem(models.Model):
         related_name="items",
         on_delete=models.CASCADE
     )
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=False)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=False, default=1)
 
 
     # Always have a valid price and quantity
