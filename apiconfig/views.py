@@ -151,18 +151,18 @@ class CartView(APIView):
         serializer.is_valid(raise_exception=True)
         product_id = serializer.validated_data["product_id"]
 
-        # ✅ Return empty cart if none exists instead of 404
-        cart = Cart.objects.filter(user=request.user).first()
+        cart = Cart.objects.filter(user=request.user).order_by("-created_at").first()
         if not cart:
-            empty_cart = Cart(user=request.user)   # not saved; purely for serializer
-            return Response(CartSerializer(empty_cart).data, status=status.HTTP_200_OK)
+            return Response({}, status=status.HTTP_200_OK)
 
-        # Delete item if present
-        cart_item = CartItem.objects.filter(cart=cart, product_id=product_id).first()
-        if cart_item:
-            cart_item.delete()
+        CartItem.objects.filter(cart=cart, product_id=product_id).delete()
+
+        if not cart.items.exists():
+            cart.delete()
+            return Response({"detail": "Cart deleted"}, status=status.HTTP_204_NO_CONTENT)
 
         return Response(CartSerializer(cart).data, status=status.HTTP_200_OK)
+
 
 
 
@@ -176,7 +176,7 @@ class CheckoutView(APIView):
         if not cart.items.exists():
             return Response({"error": "Cart is empty"}, status=400)
 
-        total_amount = Decimal(cart.total_amount())
+        total_amount = Decimal(cart.total_amount)
         order = Order.objects.create(
             user=request.user,
             total_amount=total_amount,
@@ -256,44 +256,6 @@ class VerifyPaymentView(APIView):
         return Response(result)
 
 
-# class VerifyPaymentView(APIView):
-#     def get(self, request, reference):
-#         try:
-#             headers = {
-#                 "Authorization": f"Bearer {settings.KORA_SECRET_KEY}",
-#                 "Content-Type": "application/json"
-#             }
-
-#             response = requests.get(
-#                 f"{settings.KORA_BASE_URL}/charges/{reference}",
-#                 headers=headers
-#             )
-#             res_data = response.json()
-
-#             if response.status_code != 200 or not res_data.get("status"):
-#                 return Response(
-#                     {"error": "Payment verification failed", "details": res_data},
-#                     status=status.HTTP_400_BAD_REQUEST
-#                 )
-
-#             payment_status = res_data["data"]["status"]  # e.g. "success", "failed", "pending"
-
-#             try:
-#                 order = Order.objects.get(reference=reference)
-#                 order.status = payment_status
-#                 order.save()
-#             except Order.DoesNotExist:
-#                 pass
-
-#             return Response({"status": payment_status, "reference": reference, "details": res_data})
-
-#         except Exception as e:
-#             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-
-
-# -------- ORDERS --------
 class OrderListView(generics.ListAPIView):
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -320,31 +282,3 @@ def kora_webhook(request):
         kora_status=data.get("status"),
     )
     return JsonResponse({"status": "ok"})
-# @csrf_exempt
-# def kora_webhook(request):
-#     data = json.loads(request.body)
-#     reference = data.get("reference")
-#     status = data.get("status")
-
-#     try:
-#         order = Order.objects.get(reference=reference)
-#     except Order.DoesNotExist:
-#         return JsonResponse({"error": "Order not found"}, status=404)
-
-#     payment = order.payment
-
-#     if status == "success":
-#         order.status = "paid"
-#         payment.status = "confirmed"
-#     elif status == "pending":
-#         order.status = "pending"
-#         payment.status = "pending"
-#     else:
-#         order.status = "failed"
-#         payment.status = "failed"
-
-#     order.save()
-#     payment.save()
-
-#     return JsonResponse({"status": "ok"})
-

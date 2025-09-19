@@ -66,12 +66,9 @@ class Cart(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
+    @property
     def total_amount(self):
-        # Start with a Decimal and let sum handle empty carts
-        return sum(
-            (item.total_price() for item in self.items.all()),
-            Decimal("0.00")
-        )
+        return sum((item.total_price for item in self.items.all()), Decimal("0.00"))
 
     def __str__(self):
         return f"Cart #{self.id} for {self.user}"
@@ -83,19 +80,19 @@ class CartItem(models.Model):
         related_name="items",
         on_delete=models.CASCADE
     )
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=False, default=1)
-
-
-    # Always have a valid price and quantity
-    price = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        default=Decimal("0.00")
-    )
+    product = models.ForeignKey("Product", on_delete=models.CASCADE)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
     quantity = models.PositiveIntegerField(default=1)
 
+    @property
     def total_price(self):
         return self.price * Decimal(self.quantity)
+
+    def save(self, *args, **kwargs):
+        # Always reflect the product’s current price if not explicitly set
+        if not self.price:
+            self.price = self.product.price
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.product} x {self.quantity}"

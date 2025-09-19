@@ -123,7 +123,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'uddy.wsgi.application'
 
 
-# Database (using sqlite by default, can switch with env)
 DATABASES = {
     'default': dj_database_url.config(
         default=config('DATABASE_URL'),
@@ -133,7 +132,6 @@ DATABASES = {
 }
 
 
-# Cloudinary
 cloudinary.config( 
     cloud_name=config("CLOUDINARY_CLOUD_NAME"),
     api_key=config("CLOUDINARY_API_KEY"),

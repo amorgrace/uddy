@@ -33,10 +33,17 @@ class ProductSerializer(serializers.ModelSerializer):
 
 class CartItemSerializer(serializers.ModelSerializer):
     product = ProductSerializer(read_only=True)
+    total_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
 
     class Meta:
         model = CartItem
-        fields = ["id", "product", "quantity", "total_price"]
+        fields = ["id", "product", "quantity", "price", "total_price"]
+
+    def to_representation(self, instance):
+        # Ensure total_price always uses the property
+        ret = super().to_representation(instance)
+        ret["total_price"] = instance.total_price
+        return ret
 
 
 class CartSerializer(serializers.ModelSerializer):
@@ -46,6 +53,12 @@ class CartSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cart
         fields = ["id", "user", "items", "total_amount", "created_at"]
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        ret["total_amount"] = instance.total_amount
+        return ret
+
 
 class CartAddSerializer(serializers.Serializer):
     product_id = serializers.IntegerField()
