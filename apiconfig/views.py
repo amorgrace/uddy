@@ -162,6 +162,24 @@ class CartView(APIView):
             return Response({"detail": "Cart deleted"}, status=status.HTTP_204_NO_CONTENT)
 
         return Response(CartSerializer(cart).data, status=status.HTTP_200_OK)
+    
+    def patch(self, request):
+        serializer = CartAddSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        product_id = serializer.validated_data["product_id"]
+        quantity   = serializer.validated_data["quantity"]
+
+        cart = Cart.objects.filter(user=request.user).order_by("-created_at").first()
+        if not cart:
+            return Response({"detail": "No cart"}, status=status.HTTP_404_NOT_FOUND)
+
+        item = CartItem.objects.filter(cart=cart, product_id=product_id).first()
+        if not item:
+            return Response({"detail": "Item not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        item.quantity = quantity
+        item.save(update_fields=["quantity"])
+        return Response(CartSerializer(cart).data, status=status.HTTP_200_OK)
 
 
 
