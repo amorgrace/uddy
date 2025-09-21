@@ -9,6 +9,7 @@ from .serializers import (
     ProductSerializer,
 
 )
+from .pagination import ProductPagination
 from django.http import JsonResponse
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.response import Response
@@ -98,6 +99,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all().order_by('-created_at')
     serializer_class = ProductSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = ProductPagination
 
 
 class CategorySummaryView(APIView):
