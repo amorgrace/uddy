@@ -213,8 +213,6 @@ class CheckoutView(APIView):
 
         cart.items.all().delete()
 
-
-        # Clean base URL to avoid trailing slashes/newlines
         base_url = settings.KORA_BASE_URL.strip().rstrip("/")
         url = f"{base_url}/charges/initialize"
 
@@ -223,10 +221,8 @@ class CheckoutView(APIView):
             "Content-Type": "application/json",
         }
 
-        if settings.DEBUG:
-            redirect = "http://localhost:5173/payment-status"
-        else:
-            redirect = "https://uddy-rho.vercel.app/payment-status"
+        redirect = "https://uddy-rho.vercel.app/payment-status"
+
         payload = {
             "amount": str(order.total_amount),
             "currency": "NGN",
@@ -259,6 +255,7 @@ class CheckoutView(APIView):
             "order_id": order.id,
             "reference": order.reference,
         })
+
 
 class VerifyPaymentView(APIView):
     permission_classes = [IsAuthenticated]
