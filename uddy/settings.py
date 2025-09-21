@@ -68,15 +68,11 @@ MIDDLEWARE = [
 ]
 
 SIMPLE_JWT = {
-    "AUTH_COOKIE": "access",         
-    "AUTH_COOKIE_REFRESH": "refresh",
-    "BLACKLIST_AFTER_ROTATION": True,
-    "AUTH_COOKIE_HTTP_ONLY": True,
-    "AUTH_COOKIE_SECURE": True,      
-    "AUTH_COOKIE_SAMESITE": "None",
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=50),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "BLACKLIST_AFTER_ROTATION": True,
 }
+
 
 DJOSER = {
     'LOGIN_FIELD': 'email',

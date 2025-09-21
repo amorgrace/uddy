@@ -29,6 +29,9 @@ from rest_framework.generics import ListAPIView
 from drf_yasg import openapi
 import uuid
 
+
+ACCESS_MAX_AGE = 300       
+REFRESH_MAX_AGE = 86400 
 class CustomTokenObtainPairView(TokenObtainPairView):
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
@@ -37,17 +40,13 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             access_token = data.get("access")
             refresh_token = data.get("refresh")
 
-            # Remove tokens from response body if you want
-            # response.data.pop("access", None)
-            # response.data.pop("refresh", None)
-
             response.set_cookie(
                 key="access",
                 value=access_token,
                 httponly=True,
-                secure=True,     
+                secure=True,
                 samesite="None",
-                max_age=300,
+                max_age=ACCESS_MAX_AGE,
             )
             response.set_cookie(
                 key="refresh",
@@ -55,31 +54,45 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 httponly=True,
                 secure=True,
                 samesite="None",
-                max_age=86400,
+                max_age=REFRESH_MAX_AGE,
             )
         return response
+
 
 class CustomTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):
         refresh_token = request.COOKIES.get("refresh")
-
         if not refresh_token:
-            return Response({"detail": "Refresh token not found in cookies"}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"detail": "Refresh token not found"}, status=status.HTTP_401_UNAUTHORIZED)
 
         try:
-            token = RefreshToken(refresh_token)
-            access_token = str(token.access_token)
+            old_refresh = RefreshToken(refresh_token)
+
+            new_refresh = RefreshToken()
+            new_refresh.set_jti()                
+            new_refresh.set_exp(old_refresh.payload['exp'])
+
+            access_token = str(old_refresh.access_token)
 
             response = Response({"detail": "Token refreshed"}, status=status.HTTP_200_OK)
-
             response.set_cookie(
                 key="access",
                 value=access_token,
                 httponly=True,
                 secure=True,
-                samesite="Lax",
-                max_age=300,  
+                samesite="None",
+                max_age=ACCESS_MAX_AGE,
             )
+            response.set_cookie(
+                key="refresh",
+                value=str(new_refresh),
+                httponly=True,
+                secure=True,
+                samesite="None",
+                max_age=REFRESH_MAX_AGE,
+            )
+
+            old_refresh.blacklist()
             return response
 
         except Exception:
@@ -88,11 +101,16 @@ class CustomTokenRefreshView(TokenRefreshView):
 
 class CustomTokenLogoutView(APIView):
     def post(self, request, *args, **kwargs):
-        response = Response({"detail": "Logged out successfully"}, status=status.HTTP_200_OK)
+        token = request.COOKIES.get("refresh")
+        if token:
+            try:
+                RefreshToken(token).blacklist()
+            except Exception:
+                pass
 
+        response = Response({"detail": "Logged out successfully"}, status=status.HTTP_200_OK)
         response.delete_cookie("access")
         response.delete_cookie("refresh")
-
         return response
 
 class ProductViewSet(viewsets.ModelViewSet):
