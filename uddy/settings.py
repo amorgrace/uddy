@@ -16,6 +16,9 @@ import cloudinary
 import cloudinary.uploader
 import cloudinary.api
 import dj_database_url
+import os 
+from .logging_config import LOGGING
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 

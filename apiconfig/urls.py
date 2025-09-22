@@ -2,9 +2,9 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 from .views import (
     ProductViewSet, 
-    CustomTokenObtainPairView, 
-    CustomTokenRefreshView, 
-    CustomTokenLogoutView, 
+    CookieTokenObtainPairView, 
+    CookieTokenRefreshView, 
+    CookieLogoutView, 
     CategorySummaryView, 
     ProductByCategoryView, 
     CartView, 
@@ -15,9 +15,9 @@ from .views import (
 router = DefaultRouter()
 
 urlpatterns = [
-    path("auth/jwt/create/", CustomTokenObtainPairView.as_view(), name="jwt-create"),
-    path("auth/jwt/refresh/", CustomTokenRefreshView.as_view(), name="jwt-refresh"),
-    path("auth/jwt/logout/", CustomTokenLogoutView.as_view(), name="jwt-logout"),
+    path("auth/jwt/create/", CookieTokenObtainPairView.as_view(), name="jwt-create"),
+    path("auth/jwt/refresh/", CookieTokenRefreshView.as_view(), name="jwt-refresh"),
+    path("auth/jwt/logout/", CookieLogoutView.as_view(), name="jwt-logout"),
 
     path("categories/", CategorySummaryView.as_view(), name="category-summary"),
     path("categories/<str:category>/", ProductByCategoryView.as_view(), name="products-by-category"),

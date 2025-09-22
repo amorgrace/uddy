@@ -32,83 +32,52 @@ import uuid
 
 ACCESS_MAX_AGE = 300       
 REFRESH_MAX_AGE = 86400 
-class CustomTokenObtainPairView(TokenObtainPairView):
+class CookieTokenObtainPairView(TokenObtainPairView):
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
-        if response.status_code == status.HTTP_200_OK:
+        if response.status_code == 200:
             data = response.data
-            access_token = data.get("access")
-            refresh_token = data.get("refresh")
-
             response.set_cookie(
-                key="access",
-                value=access_token,
-                httponly=True,
-                secure=True,
-                samesite="None",
-                max_age=ACCESS_MAX_AGE,
+                "access", data["access"],
+                httponly=True, secure=True, samesite="None",
+                max_age=ACCESS_MAX_AGE
             )
             response.set_cookie(
-                key="refresh",
-                value=refresh_token,
-                httponly=True,
-                secure=True,
-                samesite="None",
-                max_age=REFRESH_MAX_AGE,
+                "refresh", data["refresh"],
+                httponly=True, secure=True, samesite="None",
+                max_age=REFRESH_MAX_AGE
             )
         return response
 
 
-class CustomTokenRefreshView(TokenRefreshView):
+class CookieTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):
-        refresh_token = request.COOKIES.get("refresh")
-        if not refresh_token:
-            return Response({"detail": "Refresh token not found"}, status=status.HTTP_401_UNAUTHORIZED)
+        token = request.COOKIES.get("refresh")
+        if not token:
+            return Response({"detail": "No refresh token"}, status=401)
 
-        try:
-            old_refresh = RefreshToken(refresh_token)
+        serializer = self.get_serializer(data={"refresh": token})
+        serializer.is_valid(raise_exception=True)
+        access = serializer.validated_data["access"]
 
-            new_refresh = RefreshToken()
-            new_refresh.set_jti()                
-            new_refresh.set_exp(old_refresh.payload['exp'])
-
-            access_token = str(old_refresh.access_token)
-
-            response = Response({"detail": "Token refreshed"}, status=status.HTTP_200_OK)
-            response.set_cookie(
-                key="access",
-                value=access_token,
-                httponly=True,
-                secure=True,
-                samesite="None",
-                max_age=ACCESS_MAX_AGE,
-            )
-            response.set_cookie(
-                key="refresh",
-                value=str(new_refresh),
-                httponly=True,
-                secure=True,
-                samesite="None",
-                max_age=REFRESH_MAX_AGE,
-            )
-
-            old_refresh.blacklist()
-            return response
-
-        except Exception:
-            return Response({"detail": "Invalid refresh token"}, status=status.HTTP_401_UNAUTHORIZED)
+        response = Response({"detail": "Access refreshed"})
+        response.set_cookie(
+            "access", access,
+            httponly=True, secure=True, samesite="None",
+            max_age=ACCESS_MAX_AGE
+        )
+        return response
 
 
-class CustomTokenLogoutView(APIView):
-    def post(self, request, *args, **kwargs):
+class CookieLogoutView(APIView):
+    def post(self, request):
         token = request.COOKIES.get("refresh")
         if token:
             try:
                 RefreshToken(token).blacklist()
             except Exception:
                 pass
-
-        response = Response({"detail": "Logged out successfully"}, status=status.HTTP_200_OK)
+        response = Response({"detail": "Successfully Logged out!"})
         response.delete_cookie("access")
         response.delete_cookie("refresh")
         return response
