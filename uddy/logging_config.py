@@ -1,7 +1,16 @@
 import os
 from pathlib import Path
 
+# Decide log directory:
+#   - Local: BASE_DIR/logs (auto-created if missing)
+#   - Production: /tmp if LOG_TO_TMP is set (e.g. on Render)
 BASE_DIR = Path(__file__).resolve().parent.parent
+if os.getenv("LOG_TO_TMP"):
+    LOG_FILE = "/tmp/django.log"
+else:
+    log_dir = BASE_DIR / "logs"
+    log_dir.mkdir(exist_ok=True)
+    LOG_FILE = log_dir / "django.log"
 
 LOGGING = {
     "version": 1,
@@ -16,13 +25,18 @@ LOGGING = {
         "file": {
             "level": "INFO",
             "class": "logging.FileHandler",
-            "filename": os.path.join(BASE_DIR, "logs", "django.log"),
+            "filename": str(LOG_FILE),
+            "formatter": "verbose",
+        },
+        "console": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
             "formatter": "verbose",
         },
     },
     "loggers": {
         "django": {
-            "handlers": ["file"],
+            "handlers": ["file", "console"],
             "level": "INFO",
             "propagate": True,
         },
