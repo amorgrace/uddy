@@ -28,6 +28,7 @@ from django.db.models import Count
 from rest_framework.generics import ListAPIView
 from drf_yasg import openapi
 import uuid
+from django.utils.decorators import method_decorator
 
 
 ACCESS_MAX_AGE = 300       
@@ -49,7 +50,7 @@ class CookieTokenObtainPairView(TokenObtainPairView):
             )
         return response
 
-
+@method_decorator(csrf_exempt, name='dispatch')
 class CookieTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):
         token = request.COOKIES.get("refresh")
