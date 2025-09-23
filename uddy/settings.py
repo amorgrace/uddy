@@ -36,6 +36,10 @@ SESSION_COOKIE_SECURE = config("SESSION_COOKIE_SECURE", cast=bool)
 CSRF_COOKIE_SAMESITE = config("CSRF_COOKIE_SAMESITE")
 CSRF_COOKIE_SECURE = config("CSRF_COOKIE_SECURE", cast=bool)
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://uddy-rho.vercel.app",
+]
+
 AUTH_USER_MODEL = 'apiconfig.User'
 
 
