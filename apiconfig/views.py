@@ -40,12 +40,12 @@ class CookieTokenObtainPairView(TokenObtainPairView):
             data = response.data
             response.set_cookie(
                 "access", data["access"],
-                httponly=True, secure=True, samesite="None",
+                httponly=True, secure=True, samesite="None", path="/",
                 max_age=ACCESS_MAX_AGE
             )
             response.set_cookie(
                 "refresh", data["refresh"],
-                httponly=True, secure=True, samesite="None",
+                httponly=True, secure=True, samesite="None", path="/",
                 max_age=REFRESH_MAX_AGE
             )
         return response
@@ -64,7 +64,7 @@ class CookieTokenRefreshView(TokenRefreshView):
         response = Response({"detail": "Access refreshed"})
         response.set_cookie(
             "access", access,
-            httponly=True, secure=True, samesite="None",
+            httponly=True, secure=True, samesite="None", path="/",
             max_age=ACCESS_MAX_AGE
         )
         return response
