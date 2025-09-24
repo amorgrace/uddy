@@ -1,20 +1,10 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
-from .views import (
-    ProductViewSet, 
-    CookieTokenObtainPairView, 
-    CookieTokenRefreshView, 
-    CookieLogoutView, 
-    CategorySummaryView, 
-    ProductByCategoryView, 
-    CartView, 
-    CheckoutView,
-    VerifyPaymentView,
-    kora_webhook
-)
+from .views import *
 router = DefaultRouter()
 
 urlpatterns = [
+    path("auth/jwt/register/", UserCreateView.as_view(), name="jwt-register"),
     path("auth/jwt/create/", CookieTokenObtainPairView.as_view(), name="jwt-create"),
     path("auth/jwt/refresh/", CookieTokenRefreshView.as_view(), name="jwt-refresh"),
     path("auth/jwt/logout/", CookieLogoutView.as_view(), name="jwt-logout"),

@@ -1,5 +1,4 @@
-from djoser.serializers import UserCreateSerializer as BaseUserCreateSerializer
-from djoser.serializers import UserSerializer as BaseUserSerializer
+
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from django.utils.timesince import timesince
@@ -7,7 +6,7 @@ from .models import Product, Cart, CartItem, Order, OrderItem, Payment
 
 User = get_user_model()
 
-class UserCreateSerializer(BaseUserCreateSerializer):
+class UserCreateSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only=True)
     class Meta:
         model = User
@@ -20,8 +19,8 @@ class UserCreateSerializer(BaseUserCreateSerializer):
         attrs.pop('confirm_password')
         return attrs
     
-class UserSerializer(BaseUserSerializer):
-    class Meta(BaseUserSerializer.Meta):
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
         model = User
         fields = ('id', 'email', 'username', 'fullname', 'country', 'phone_number')
 

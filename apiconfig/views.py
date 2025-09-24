@@ -2,13 +2,7 @@ from django.shortcuts import render
 from rest_framework import viewsets, permissions
 from .utils import update_order_status
 from .models import Product, Cart, CartItem, Order, OrderItem, Payment
-from .serializers import (
-    CartSerializer,
-    CartAddSerializer,
-    OrderSerializer,
-    ProductSerializer,
-
-)
+from .serializers import *
 from .pagination import ProductPagination
 from django.http import JsonResponse
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -29,10 +23,24 @@ from rest_framework.generics import ListAPIView
 from drf_yasg import openapi
 import uuid
 from django.utils.decorators import method_decorator
+from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import make_password
+import logging
+
+logger = logging.getLogger(__name__)
+User = get_user_model()
+ACCESS_MAX_AGE  = int(settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].total_seconds())
+REFRESH_MAX_AGE = int(settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds())
+
+class UserCreateView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserCreateSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def perform_create(self, serializer):
+        serializer.save(password=make_password(serializer.validated_data["password"]))
 
 
-ACCESS_MAX_AGE = 300       
-REFRESH_MAX_AGE = 86400 
 class CookieTokenObtainPairView(TokenObtainPairView):
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
@@ -50,7 +58,7 @@ class CookieTokenObtainPairView(TokenObtainPairView):
             )
         return response
 
-@method_decorator(csrf_exempt, name='dispatch')
+
 class CookieTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):
         token = request.COOKIES.get("refresh")
@@ -70,18 +78,23 @@ class CookieTokenRefreshView(TokenRefreshView):
         return response
 
 
+
+
 class CookieLogoutView(APIView):
     def post(self, request):
         token = request.COOKIES.get("refresh")
         if token:
             try:
                 RefreshToken(token).blacklist()
-            except Exception:
-                pass
-        response = Response({"detail": "Successfully Logged out!"})
+            except Exception as exc:
+                # log the problem but still continue to clear cookies
+                logger.warning("Logout blacklist failed: %s", exc)
+
+        response = Response({"detail": "Successfully logged out!"})
         response.delete_cookie("access")
         response.delete_cookie("refresh")
         return response
+
 
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all().order_by('-created_at')

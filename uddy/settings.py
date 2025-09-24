@@ -54,10 +54,10 @@ INSTALLED_APPS = [
     'apiconfig',
     'rest_framework',
     'rest_framework.authtoken',
-    'djoser',
     'drf_yasg',
     'corsheaders',
     'cloudinary',
+    "rest_framework_simplejwt.token_blacklist",
 ]
 
 MIDDLEWARE = [
@@ -78,16 +78,6 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "BLACKLIST_AFTER_ROTATION": True,
-}
-
-
-DJOSER = {
-    'LOGIN_FIELD': 'email',
-    'SERIALIZERS': {
-        'user_create': 'apiconfig.serializers.UserCreateSerializer',
-        'current_user': 'apiconfig.serializers.UserSerializer',
-        "user": "apiconfig.serializers.UserSerializer",
-    }
 }
 
 REST_FRAMEWORK = {
