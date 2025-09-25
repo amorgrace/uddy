@@ -83,12 +83,14 @@ SIMPLE_JWT = {
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "rest_framework.schemas.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "apiconfig.authentication.CookieJWTAuthentication",
+        "apiconfig.authentication.CookieJWTAuthentication",            # Web (cookie)
+        "rest_framework_simplejwt.authentication.JWTAuthentication",   # Mobile (header)
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
 }
+
 
 # Kora
 KORA_PUBLIC_KEY = config("KORA_PUBLIC_KEY")
