@@ -1,6 +1,9 @@
 import os
 from pathlib import Path
 
+
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
 # Decide log directory:
 #   - Local: BASE_DIR/logs (auto-created if missing)
 #   - Production: /tmp if LOG_TO_TMP is set (e.g. on Render)

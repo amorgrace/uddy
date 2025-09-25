@@ -56,19 +56,26 @@ class CookieTokenObtainPairView(TokenObtainPairView):
                 httponly=True, secure=True, samesite="None", path="/",
                 max_age=REFRESH_MAX_AGE
             )
-        return response
 
 
 class CookieTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):
+        client_ip = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR"))
         token = request.COOKIES.get("refresh")
         if not token:
+            logger.warning(
+                f"No refresh token in cookies for request from {client_ip}, "
+                f"User-Agent: {request.META.get('HTTP_USER_AGENT')}, "
+                f"Cookies: {request.META.get('HTTP_COOKIE', 'No cookies')}"
+            )
             return Response({"detail": "No refresh token"}, status=401)
-
         serializer = self.get_serializer(data={"refresh": token})
-        serializer.is_valid(raise_exception=True)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except Exception as e:
+            logger.error(f"Refresh token validation failed for {client_ip}: {e}")
+            return Response({"detail": "Invalid refresh token"}, status=401)
         access = serializer.validated_data["access"]
-
         response = Response({"detail": "Access refreshed"})
         response.set_cookie(
             "access", access,
