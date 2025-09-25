@@ -76,6 +76,13 @@ class CookieTokenRefreshView(TokenRefreshView):
             max_age=ACCESS_MAX_AGE
         )
         return response
+    
+class GetUserView(generics.RetrieveAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_user(self):
+        return self.request.user
 
 
 
