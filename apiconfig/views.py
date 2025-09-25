@@ -77,12 +77,18 @@ class CookieTokenRefreshView(TokenRefreshView):
         )
         return response
     
-class GetUserView(generics.RetrieveAPIView):
-    serializer_class = UserSerializer
+class GetUserView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_user(self):
-        return self.request.user
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return Response(
+                {"detail": "User not found or not authenticated"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 
