@@ -83,12 +83,20 @@ SIMPLE_JWT = {
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "rest_framework.schemas.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "apiconfig.authentication.CookieJWTAuthentication",            # Web (cookie)
-        "rest_framework_simplejwt.authentication.JWTAuthentication",   # Mobile (header)
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
-    "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.IsAuthenticated",
-    ],
+}
+
+SWAGGER_SETTINGS = {
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": 'JWT Authorization header using the Bearer scheme. Example: "Authorization: Bearer {token}"',
+        }
+    },
+    "USE_SESSION_AUTH": False,
 }
 
 

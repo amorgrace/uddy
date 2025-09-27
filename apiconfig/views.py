@@ -33,93 +33,25 @@ ACCESS_MAX_AGE  = int(settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].total_seconds
 REFRESH_MAX_AGE = int(settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds())
 
 
-class CookieTokenObtainPairView(TokenObtainPairView):
-    def post(self, request, *args, **kwargs):
-        base_response = super().post(request, *args, **kwargs)
+class TokenLoginView(TokenObtainPairView):
+    pass
 
-        if base_response.status_code != 200:
-            return base_response
 
-        data = base_response.data
-        user_agent = request.META.get("HTTP_USER_AGENT", "")
+class TokenRefreshHeaderView(TokenRefreshView):
+    pass
 
-        # Mobile → return tokens in response body (to store in localStorage/secure storage)
-        if any(x in user_agent for x in ("Mobile", "iPhone", "Android")):
-            return Response({
-                "access": data["access"],
-                "refresh": data["refresh"],
-                "detail": "Tokens provided for mobile use",
-            })
 
-        # Desktop/Web → set HttpOnly cookies
-        response = Response({"detail": "Login successful"})
-        response.set_cookie(
-            "access", data["access"],
-            httponly=True, secure=True, samesite="None", path="/",
-            max_age=ACCESS_MAX_AGE
-        )
-        response.set_cookie(
-            "refresh", data["refresh"],
-            httponly=True, secure=True, samesite="None", path="/",
-            max_age=REFRESH_MAX_AGE
-        )
-        return response
-    
-
-class CookieTokenRefreshView(TokenRefreshView):
-    def post(self, request, *args, **kwargs):
-        user_agent = request.META.get("HTTP_USER_AGENT", "")
-
-        # ---- Mobile clients ----
-        if any(x in user_agent for x in ("Mobile", "iPhone", "Android")):
-            # Standard SimpleJWT behaviour
-            return super().post(request, *args, **kwargs)
-
-        # ---- Web clients ----
-        refresh_cookie = request.COOKIES.get("refresh")
-        if not refresh_cookie:
-            return Response({"detail": "Refresh cookie missing"}, status=status.HTTP_401_UNAUTHORIZED)
-
-        try:
-            new_access  = RefreshToken(refresh_cookie).access_token
-            new_refresh = str(RefreshToken(refresh_cookie))
-        except Exception:
-            return Response({"detail": "Invalid refresh token"}, status=status.HTTP_401_UNAUTHORIZED)
-
-        response = Response({"detail": "Token refreshed"})
-        response.set_cookie(
-            "access", str(new_access),
-            httponly=True, secure=True, samesite="None", path="/",
-            max_age=ACCESS_MAX_AGE,
-        )
-        response.set_cookie(
-            "refresh", new_refresh,
-            httponly=True, secure=True, samesite="None", path="/",
-            max_age=REFRESH_MAX_AGE,
-        )
-        return response
-    
-
-class CookieLogoutView(APIView):
+class TokenLogoutView(APIView):
     def post(self, request):
-        user_agent = request.META.get("HTTP_USER_AGENT", "")
-
-        # Mobile clients using header tokens don’t need cookie cleanup
-        if any(x in user_agent for x in ("Mobile", "iPhone", "Android")):
-            return Response({"detail": "Logged out (mobile token client)"},
-                            status=status.HTTP_200_OK)
-
-        refresh_cookie = request.COOKIES.get("refresh")
-        if refresh_cookie:
+        refresh_token = request.data.get("refresh")
+        if refresh_token:
             try:
-                RefreshToken(refresh_cookie).blacklist()
-            except Exception as exc:
-                logger.warning("Logout blacklist failed: %s", exc)
-
-        response = Response({"detail": "Successfully logged out!"})
-        response.delete_cookie("access", path="/")
-        response.delete_cookie("refresh", path="/")
-        return response
+                RefreshToken(refresh_token).blacklist()
+            except Exception:
+                return Response({"detail": "Invalid token"},
+                                status=status.HTTP_400_BAD_REQUEST)
+        return Response({"detail": "Logged out"}, status=status.HTTP_200_OK)
+    
 class UserCreateView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserCreateSerializer
@@ -307,7 +239,6 @@ class VerifyPaymentView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, reference):
-        # Call Kora's verify API first
         resp = requests.get(
             f"{settings.KORA_BASE_URL}/charges/{reference}",
             headers={"Authorization": f"Bearer {settings.KORA_SECRET_KEY}"},

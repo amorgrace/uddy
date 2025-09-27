@@ -5,9 +5,9 @@ router = DefaultRouter()
 
 urlpatterns = [
     path("auth/jwt/register/", UserCreateView.as_view(), name="jwt-register"),
-    path("auth/jwt/create/", CookieTokenObtainPairView.as_view(), name="jwt-create"),
-    path("auth/jwt/refresh/", CookieTokenRefreshView.as_view(), name="jwt-refresh"),
-    path("auth/jwt/logout/", CookieLogoutView.as_view(), name="jwt-logout"),
+    path("auth/jwt/create/", TokenLoginView.as_view(), name="jwt-create"),
+    path("auth/jwt/refresh/", TokenRefreshHeaderView.as_view(), name="jwt-refresh"),
+    path("auth/jwt/logout/", TokenLogoutView.as_view(), name="jwt-logout"),
 
     path("categories/", CategorySummaryView.as_view(), name="category-summary"),
     path("categories/<str:category>/", ProductByCategoryView.as_view(), name="products-by-category"),
